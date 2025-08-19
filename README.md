@@ -19,6 +19,8 @@ It handles user authentication, session management, and password reset.
 
 ## 📂 Folder Structure
 
+```
+
 prf-backend/
 ├── controllers/
 │   └── authControllers.js
@@ -38,6 +40,8 @@ prf-backend/
 ├── server.js
 ├── package.json
 └── package-lock.json
+
+```
 
 ---
 
