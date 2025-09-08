@@ -11,7 +11,6 @@ app.use(
   cors({
     origin: [
       'http://localhost:5173',
-      'https://password-reset-flow-gb7g.onrender.com',
       'https://passwordreset-flow-frontend.netlify.app',
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
