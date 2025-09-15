@@ -10,7 +10,8 @@ const app = express();
 app.use(
   cors({
     origin: [
-      'http://localhost:5173','https://passresettt.netlify.app',
+      'http://localhost:5173',
+      'https://passresettt.netlify.app/',
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
