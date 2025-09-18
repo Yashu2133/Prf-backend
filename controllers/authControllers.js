@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET, EMAIL, EMAIL_PASS } = require('../utils/config');
+const { JWT_SECRET, SENDGRID_API_KEY, SENDGRID_SENDER } = require('../utils/config');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
@@ -51,43 +51,48 @@ const authControllers = {
     res.clearCookie('token');
     res.status(200).json({ message: 'User logged out successfully' });
   },
+resetPassword: async (req, res) => {
+  try {
+    const { email } = req.body;
 
-  resetPassword: async (req, res) => {
-    try {
-      const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: 'User does not exist' });
 
-      const user = await User.findOne({ email });
-      if (!user) return res.status(400).json({ message: 'User does not exist' });
+    const token = crypto.randomBytes(20).toString('hex');
+    user.resetToken = token;
+    user.resetTokenExpiration = Date.now() + 3600000; // 1 hour
+    await user.save();
 
-      const token = crypto.randomBytes(20).toString('hex');
-      user.resetToken = token;
-      user.resetTokenExpiration = Date.now() + 3600000; // 1 hour
-      await user.save();
+    const resetLink = `https://passwordreset-flow-frontend.netlify.app/reset-password/${token}`;
 
-      console.log('Generated token:', token);
-      console.log('User before save:', user);
+    // ✅ Configure SendGrid transport
+    const transporter = nodemailer.createTransport({
+      service: 'SendGrid',
+      auth: {
+        user: 'apikey', // fixed value
+        pass: process.env.SENDGRID_API_KEY,
+      },
+    });
 
-      const resetLink = `https://passwordreset-flow-frontend.netlify.app/reset-password/${token}`;
+    // ✅ Send mail
+    await transporter.sendMail({
+      from: process.env.SENDGRID_SENDER,  // must be verified sender in SendGrid
+      to: email,
+      subject: 'Reset your password',
+      html: `
+        <p>Hello ${user.name},</p>
+        <p>You requested a password reset. Click the link below to reset your password:</p>
+        <a href="${resetLink}">${resetLink}</a>
+        <p>This link will expire in 1 hour.</p>
+      `,
+    });
 
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: EMAIL, pass: EMAIL_PASS },
-      });
+    res.status(200).json({ message: 'Password reset link sent to your email' });
+  } catch (err) {
+    res.status(500).json({ message: `There is an error in resetting password : ${err.message}` });
+  }
+},
 
-      await transporter.sendMail({
-        from: EMAIL,
-        to: email,
-        subject: 'Reset your password',
-        html: `<p>Click the link below to reset your password:</p>
-               <a href="${resetLink}">${resetLink}</a>
-               <p>This link will expire in 1 hour.</p>`,
-      });
-
-      res.status(200).json({ message: 'Password reset link sent to your email' });
-    } catch (err) {
-      res.status(500).json({ message: `There is an error in resetting password : ${err.message}` });
-    }
-  },
 resetPasswordConfirm: async (req, res) => {
   try {
     const rawToken = req.params.token;
