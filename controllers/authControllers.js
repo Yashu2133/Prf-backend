@@ -1,13 +1,8 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
-<<<<<<< HEAD
-const { JWT_SECRET, SENDGRID_API_KEY, SENDGRID_SENDER } = require('../utils/config');
-const nodemailer = require('nodemailer');
-=======
 const { JWT_SECRET, SENDGRID_API_KEY, FROM_EMAIL } = require('../utils/config');
 const sgMail = require('@sendgrid/mail');
->>>>>>> 0a1f229 (Update backend for sendergrid and config changes)
 const crypto = require('crypto');
 
 sgMail.setApiKey(SENDGRID_API_KEY);
@@ -58,62 +53,18 @@ const authControllers = {
     res.clearCookie('token');
     res.status(200).json({ message: 'User logged out successfully' });
   },
-resetPassword: async (req, res) => {
-  try {
-    const { email } = req.body;
 
-<<<<<<< HEAD
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'User does not exist' });
-
-    const token = crypto.randomBytes(20).toString('hex');
-    user.resetToken = token;
-    user.resetTokenExpiration = Date.now() + 3600000; // 1 hour
-    await user.save();
-=======
-  resetPassword: async (req, res) => {
+    resetPassword: async (req, res) => {
     try {
       const { email } = req.body;
       const user = await User.findOne({ email });
       if (!user) return res.status(400).json({ message: 'User does not exist' });
->>>>>>> 0a1f229 (Update backend for sendergrid and config changes)
 
-    const resetLink = `https://passwordreset-flow-frontend.netlify.app/reset-password/${token}`;
+      const token = crypto.randomBytes(20).toString('hex');
+      user.resetToken = token;
+      user.resetTokenExpiration = Date.now() + 3600000; // 1 hour
+      await user.save();
 
-<<<<<<< HEAD
-    // ✅ Configure SendGrid transport
-    const transporter = nodemailer.createTransport({
-      service: 'SendGrid',
-      auth: {
-        user: 'apikey', // fixed value
-        pass: process.env.SENDGRID_API_KEY,
-      },
-    });
-
-    // ✅ Send mail
-    await transporter.sendMail({
-      from: process.env.SENDGRID_SENDER,  // must be verified sender in SendGrid
-      to: email,
-      subject: 'Reset your password',
-      html: `
-        <p>Hello ${user.name},</p>
-        <p>You requested a password reset. Click the link below to reset your password:</p>
-        <a href="${resetLink}">${resetLink}</a>
-        <p>This link will expire in 1 hour.</p>
-      `,
-    });
-
-    res.status(200).json({ message: 'Password reset link sent to your email' });
-  } catch (err) {
-    res.status(500).json({ message: `There is an error in resetting password : ${err.message}` });
-  }
-},
-
-resetPasswordConfirm: async (req, res) => {
-  try {
-    const rawToken = req.params.token;
-    const token = rawToken.trim();
-=======
       const resetLink = `https://passwordreset-flow-frontend.netlify.app/reset-password/${token}`;
 
       const msg = {
@@ -132,9 +83,8 @@ resetPasswordConfirm: async (req, res) => {
       res.status(500).json({ message: `There is an error in resetting password : ${err.message}` });
     }
   },
->>>>>>> 0a1f229 (Update backend for sendergrid and config changes)
 
-  resetPasswordConfirm: async (req, res) => {
+    resetPasswordConfirm: async (req, res) => {
     try {
       const rawToken = req.params.token;
       const token = rawToken.trim();
