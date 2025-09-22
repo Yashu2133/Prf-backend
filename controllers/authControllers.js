@@ -1,9 +1,16 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
+<<<<<<< HEAD
 const { JWT_SECRET, SENDGRID_API_KEY, SENDGRID_SENDER } = require('../utils/config');
 const nodemailer = require('nodemailer');
+=======
+const { JWT_SECRET, SENDGRID_API_KEY, FROM_EMAIL } = require('../utils/config');
+const sgMail = require('@sendgrid/mail');
+>>>>>>> 0a1f229 (Update backend for sendergrid and config changes)
 const crypto = require('crypto');
+
+sgMail.setApiKey(SENDGRID_API_KEY);
 
 const authControllers = {
   register: async (req, res) => {
@@ -55,6 +62,7 @@ resetPassword: async (req, res) => {
   try {
     const { email } = req.body;
 
+<<<<<<< HEAD
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'User does not exist' });
 
@@ -62,9 +70,17 @@ resetPassword: async (req, res) => {
     user.resetToken = token;
     user.resetTokenExpiration = Date.now() + 3600000; // 1 hour
     await user.save();
+=======
+  resetPassword: async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await User.findOne({ email });
+      if (!user) return res.status(400).json({ message: 'User does not exist' });
+>>>>>>> 0a1f229 (Update backend for sendergrid and config changes)
 
     const resetLink = `https://passwordreset-flow-frontend.netlify.app/reset-password/${token}`;
 
+<<<<<<< HEAD
     // ✅ Configure SendGrid transport
     const transporter = nodemailer.createTransport({
       service: 'SendGrid',
@@ -97,43 +113,54 @@ resetPasswordConfirm: async (req, res) => {
   try {
     const rawToken = req.params.token;
     const token = rawToken.trim();
+=======
+      const resetLink = `https://passwordreset-flow-frontend.netlify.app/reset-password/${token}`;
 
-    const { password } = req.body;
+      const msg = {
+        to: email,
+        from: FROM_EMAIL,
+        subject: 'Reset your password',
+        html: `<p>Click the link below to reset your password:</p>
+               <a href="${resetLink}">${resetLink}</a>
+               <p>This link will expire in 1 hour.</p>`,
+      };
 
-    console.log('🔹 Incoming raw token:', JSON.stringify(rawToken));
-    console.log('🔹 Clean token (trimmed):', JSON.stringify(token));
-    console.log('🔹 Incoming password:', password);
-    const user = await User.findOne({
-      resetToken: token,
-      resetTokenExpiration: { $gt: Date.now() },
-    });
+      await sgMail.send(msg);
 
-    console.log('🔹 User found:', user ? user.email : null);
-
-    if (!user) {
-      return res.status(400).json({ 
-        message: 'Invalid or expired token. Please request a new password reset link.' 
-      });
+      res.status(200).json({ message: 'Password reset link sent to your email' });
+    } catch (err) {
+      res.status(500).json({ message: `There is an error in resetting password : ${err.message}` });
     }
+  },
+>>>>>>> 0a1f229 (Update backend for sendergrid and config changes)
 
-    // Update password
-    user.password = await bcrypt.hash(password, 10);
-    user.resetToken = undefined;
-    user.resetTokenExpiration = undefined;
-    await user.save();
+  resetPasswordConfirm: async (req, res) => {
+    try {
+      const rawToken = req.params.token;
+      const token = rawToken.trim();
+      const { password } = req.body;
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Password has been reset successfully' 
-    });
+      const user = await User.findOne({
+        resetToken: token,
+        resetTokenExpiration: { $gt: Date.now() },
+      });
 
-  } catch (err) {
-    res.status(500).json({ 
-      message: `Error resetting password: ${err.message}` 
-    });
-  }
-}
+      if (!user) {
+        return res.status(400).json({ 
+          message: 'Invalid or expired token. Please request a new password reset link.' 
+        });
+      }
 
+      user.password = await bcrypt.hash(password, 10);
+      user.resetToken = undefined;
+      user.resetTokenExpiration = undefined;
+      await user.save();
+
+      res.status(200).json({ success: true, message: 'Password has been reset successfully' });
+    } catch (err) {
+      res.status(500).json({ message: `Error resetting password: ${err.message}` });
+    }
+  },
 };
 
 module.exports = authControllers;
